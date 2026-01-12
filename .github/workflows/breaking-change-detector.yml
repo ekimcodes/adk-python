@@ -14,15 +14,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Crucial for griffe.load_git to access the main branch history
+          fetch-depth: 0  # Required for griffe.load_git to access main branch history
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Griffe
-        run: pip install griffe
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        # Syncing extras (like test) ensures 'google-auth' and other 'google.*' 
+        # namespaces are populated, preventing ModuleNotFound errors.
+        run: |
+          uv sync --extra test
+          uv pip install griffe
 
       - name: Run Breaking Change Detection
         shell: python
@@ -31,26 +38,29 @@ jobs:
           import griffe
           from griffe import find_breaking_changes, load, load_git
 
-          # 1. Load the current PR version from the local source
-          # The adk-python source is located in src/google/adk
+          # The package 'google.adk' is located inside the 'src' directory.
+          # Specifying search_paths=["src"] allows Griffe to find it.
           try:
-              new_api = load("src/google/adk")
+              print("Loading current API version...")
+              new_api = load("google.adk", search_paths=["src"])
               
-              # 2. Load the 'main' version for comparison
-              # Griffe will look at the main branch's version of the package
-              old_api = load_git("google.adk", ref="main")
+              print("Loading baseline API version from main branch...")
+              # load_git automatically handles the temporary checkout of the ref.
+              old_api = load_git("google.adk", ref="main", search_paths=["src"])
 
-              # 3. Detect and explain breaking changes
+              print("Comparing versions for breaking changes...")
               breakages = list(find_breaking_changes(old_api, new_api))
               
               if breakages:
+                  # Annotation for GitHub Actions UI
                   print(f"::error::Found {len(breakages)} breaking changes!")
                   for breakage in breakages:
-                      # .explain() provides a human-readable reason for the breakage
+                      # .explain() provides details on what was removed or changed
                       print(breakage.explain())
                   sys.exit(1)
                   
-              print("No breaking changes detected.")
+              print("Success: No breaking changes detected.")
           except Exception as e:
-              print(f"::warning::Breaking change detection failed: {e}")
-              # We don't exit 1 here to prevent CI failure if the tool itself crashes
+              # If Griffe fails (e.g., due to the 'google' module error), we fail the check.
+              print(f"::error::Breaking change detection failed: {e}")
+              sys.exit(1)
