@@ -353,7 +353,7 @@ class Runner:
       session_id: str,
       new_message: types.Content,
       run_config: Optional[RunConfig] = None,
-  ) -> Generator[Event, None, None]:
+  ) -> Generator[dict, None, None]:
     """Runs the agent.
 
     NOTE:
