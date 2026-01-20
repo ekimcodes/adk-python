@@ -28,7 +28,7 @@ What actually happened? Include error messages or crash stack traces here.
 
 **Environment Details**
 * **ADK Library Version:** (e.g., 2.0.1)
-* **Desktop OS:** (e.g., macOS, Linux, Windows]
+* **Desktop OS:** (e.g., macOS, Linux, Windows)
 * **Python Version:**
 
 **Model Information**
