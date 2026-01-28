@@ -990,7 +990,7 @@ class AdkWebServer:
         " releases."
     )
     @app.get(
-        "/apps/{app_name}/eval_sets",
+        "/apps/{app_name}/eval_sets_legacy",
         response_model_exclude_none=True,
         tags=[TAG_EVALUATION],
     )
